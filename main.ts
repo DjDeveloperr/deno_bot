@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --no-check --allow-net --allow-run=deno
+#!/usr/bin/env -S deno run --no-check --allow-net --allow-env --allow-run=deno
 
 import { Client } from "./deps.ts";
 import { TOKEN } from "./config.ts";
@@ -6,7 +6,7 @@ import { runWithDeno } from "./runner.ts";
 
 const client = new Client({
   token: TOKEN,
-  intents: [],
+  intents: ["GUILDS"],
 });
 
 client.interactions.handle("Run with Deno", async (d) => {
@@ -39,7 +39,10 @@ client.interactions.handle("Run with Deno", async (d) => {
   const time = performance.now() - now;
 
   return d.editResponse(
-    `**Executed in \`${time.toFixed(2)}ms\`**\n**Exit Code:** ${result.code}${
+    `[**Executed in \`${
+      time.toFixed(2)
+    }ms\`**](<https://discord.com/channels/${d.guild
+      ?.id}/${d.targetMessage.channelID}/${d.targetMessage.id}>)\n**Exit Code:** ${result.code}${
       result.error
         ? `\n**Error:** ${result.error}`
         : `${

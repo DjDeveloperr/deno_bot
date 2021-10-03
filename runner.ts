@@ -16,8 +16,9 @@ export interface RunResult {
 export async function runWithDeno(
   lang: string,
   code: string,
+  allowImports = false,
 ): Promise<RunResult> {
-  if (code.match(/import(( ?{)|( ?\()| |( (\w|\$|_)))/)) {
+  if (!allowImports && code.match(/import(( ?{)|( ?\()| |( (\w|\$|_)))/)) {
     return { code: "Error", error: "Imports are not allowed" };
   }
 
@@ -28,11 +29,11 @@ export async function runWithDeno(
   try {
     const proc = Deno.run({
       cmd: [
-        "deno",
+        Deno.env.get("DENO_PATH") ?? "deno",
         "run",
         "--no-check",
         "--allow-hrtime",
-        "--v8-flags=--max-heap-size=20",
+        "--v8-flags=--max-old-space-size=20",
         "-",
       ],
       stdin: "piped",
@@ -52,7 +53,7 @@ export async function runWithDeno(
         result.code = "ForceExit";
         result.error = "Timeout";
       }
-    }, 1000);
+    }, 500);
 
     const { code: statusCode } = await proc.status().then((status) => {
       returned = true;
