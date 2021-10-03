@@ -11,7 +11,11 @@ export interface RunResult {
   code: number | string;
   stderr?: string;
   stdout?: string;
+  time: number;
+  unexpected?: boolean;
 }
+
+export const MAX_TIME = 500;
 
 export async function runWithDeno(
   lang: string,
@@ -19,14 +23,16 @@ export async function runWithDeno(
   allowImports = false,
 ): Promise<RunResult> {
   if (!allowImports && code.match(/import(( ?{)|( ?\()| |( (\w|\$|_)))/)) {
-    return { code: "Error", error: "Imports are not allowed" };
+    return { time: 0, code: "Error", error: "Imports are not allowed" };
   }
 
   const result: RunResult = {
     code: "Unknown",
+    time: 0,
   };
 
   try {
+    const now = performance.now();
     const proc = Deno.run({
       cmd: [
         Deno.env.get("DENO_PATH") ?? "deno",
@@ -53,12 +59,15 @@ export async function runWithDeno(
         result.code = "ForceExit";
         result.error = "Timeout";
       }
-    }, 500);
+    }, MAX_TIME);
 
     const { code: statusCode } = await proc.status().then((status) => {
       returned = true;
       return status;
     });
+
+    result.time = performance.now() - now;
+    result.unexpected = result.time > (MAX_TIME + 50);
 
     result.code = statusCode;
 
